@@ -1,227 +1,200 @@
 <script setup lang="ts">
-type CardItem = { nameId: number, name: string }
+import { useScrollLock } from "@vueuse/core";
 
-/** Prefetch queue size: next card is often instant; rest load in background */
-const BUFFER_TARGET = 8
+type CardItem = { nameId: number; name: string };
+
+/** Page scroll while dragging cards — VueUse (already in Nuxt UI’s stack). @see https://vueuse.org/useScrollLock */
+const isScrollLocked = useScrollLock(
+  () => (import.meta.client ? document.documentElement : null),
+  false
+);
 
 const props = defineProps<{
-  gameId: string
-  parent: 'mommy' | 'daddy'
-}>()
+  gameId: string;
+  parent: "mommy" | "daddy";
+}>();
 
-const toast = useToast()
-const { t } = useI18n()
+const toast = useToast();
+const { t } = useI18n();
 
-const items = ref<CardItem[]>([])
-const buffer = ref<CardItem[]>([])
-const loading = ref(true)
-const done = ref(false)
-const busy = ref(false)
-let bufferTopUpInFlight: Promise<void> | null = null
+/** Shuffled queue: head is current card; tail is upcoming */
+const remaining = ref<CardItem[]>([]);
+const loading = ref(true);
+const busy = ref(false);
+
+const items = computed(() => {
+  const head = remaining.value[0];
+  return head ? [head] : [];
+});
+
+const done = computed(() => !loading.value && remaining.value.length === 0);
 
 /** FlashCards exposed API (vue3-flashcards) */
 const deck = ref<{
-  swipeLeft: () => void
-  swipeRight: () => void
-  skip: () => void
-  restore: () => void
-  reset: (options?: { animate?: boolean }) => Promise<void>
-} | null>(null)
+  swipeLeft: () => void;
+  swipeRight: () => void;
+  skip: () => void;
+  restore: () => void;
+  reset: (options?: { animate?: boolean }) => Promise<void>;
+} | null>(null);
+
+function shuffleInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j]!, arr[i]!];
+  }
+  return arr;
+}
 
 /** Stronger, consistent visibility while dragging (delta from vue3-flashcards). */
 function swipeBadgeOpacity(delta: number) {
-  const d = Math.abs(Number(delta) || 0)
-  return Math.min(1, 0.2 + d * 4)
-}
-
-async function fetchNameBatch(
-  count: number,
-  excludeNameId?: number
-): Promise<CardItem[]> {
-  const params: Record<string, string | number> = {
-    parent: props.parent,
-    batch: count
-  }
-  if (excludeNameId != null) {
-    params.exclude = excludeNameId
-  }
-  const data = await $fetch<{
-    items?: CardItem[]
-    done?: boolean
-  }>(`/api/games/${props.gameId}/next-name`, {
-    params
-  })
-  if (data.done && (!data.items || data.items.length === 0)) {
-    return []
-  }
-  return data.items ?? []
-}
-
-function scheduleBufferTopUp() {
-  if (done.value) {
-    return
-  }
-  const need = BUFFER_TARGET - buffer.value.length
-  if (need <= 0 || bufferTopUpInFlight) {
-    return
-  }
-  bufferTopUpInFlight = (async () => {
-    try {
-      const fresh = await fetchNameBatch(need, items.value[0]?.nameId)
-      buffer.value.push(...fresh)
-    } catch {
-      /* prefetch is best-effort */
-    } finally {
-      bufferTopUpInFlight = null
-    }
-  })()
+  const d = Math.abs(Number(delta) || 0);
+  return Math.min(1, 0.2 + d * 4);
 }
 
 async function resetDeck() {
   try {
-    await deck.value?.reset?.({ animate: false })
+    await deck.value?.reset?.({ animate: false });
   } catch {
     /* ignore if deck not ready */
   }
 }
 
-/**
- * Show next card: pop from prefetch buffer (instant) or fetch a new batch.
- */
-async function advanceToNextCard() {
-  if (buffer.value.length > 0) {
-    const next = buffer.value.shift()!
-    items.value = [next]
-    loading.value = false
-    scheduleBufferTopUp()
-    await nextTick()
-    await resetDeck()
-    return
-  }
-
-  const excludeWhileFetching = items.value[0]?.nameId
-
-  loading.value = true
-  items.value = []
+async function loadDeck() {
+  loading.value = true;
   try {
-    const batch = await fetchNameBatch(BUFFER_TARGET, excludeWhileFetching)
-    if (!batch.length) {
-      done.value = true
-      return
-    }
-    done.value = false
-    items.value = [batch[0]!]
-    buffer.value.push(...batch.slice(1))
-    scheduleBufferTopUp()
-    await nextTick()
-    await resetDeck()
+    const data = await $fetch<{
+      items?: CardItem[];
+      done?: boolean;
+    }>(`/api/games/${props.gameId}/deck`, {
+      params: { parent: props.parent },
+    });
+    const raw = data.items ?? [];
+    shuffleInPlace(raw);
+    remaining.value = raw;
   } catch {
-    done.value = true
+    remaining.value = [];
   } finally {
-    loading.value = false
+    loading.value = false;
   }
+  await nextTick();
+  await resetDeck();
 }
 
-async function postSwipe(action: 'like' | 'dislike', item: CardItem) {
-  const { matched, matchedName } = await $fetch(
-    `/api/games/${props.gameId}/swipe`,
-    {
-      method: 'POST',
-      body: {
-        nameId: item.nameId,
-        parent: props.parent,
-        action
-      }
-    }
-  )
-  if (matched) {
-    toast.add({
-      title: t('swipe.matchTitle'),
-      description: t('swipe.matchDescription', { name: matchedName }),
-      icon: 'i-lucide-heart',
-      color: 'success'
-    })
+async function goToNextCard() {
+  remaining.value = remaining.value.slice(1);
+  await nextTick();
+  await resetDeck();
+}
+
+/** Skip is not persisted — move current to the back so it can show again later */
+async function skipToBack() {
+  const q = remaining.value;
+  if (q.length > 1) {
+    const [head, ...rest] = q;
+    remaining.value = [...rest, head!];
   }
+  await nextTick();
+  await resetDeck();
+}
+
+/**
+ * Persists swipe in the background so advancing the deck is not blocked on network.
+ * On failure, the name may still appear again after refresh (not in DB until saved).
+ */
+function postSwipeInBackground(action: "like" | "dislike", item: CardItem) {
+  void $fetch(`/api/games/${props.gameId}/swipe`, {
+    method: "POST",
+    body: {
+      nameId: item.nameId,
+      parent: props.parent,
+      action,
+    },
+  })
+    .then(({ matched, matchedName }) => {
+      if (matched) {
+        toast.add({
+          title: t("swipe.matchTitle"),
+          description: t("swipe.matchDescription", { name: matchedName }),
+          icon: "i-lucide-heart",
+          color: "success",
+        });
+      }
+    })
+    .catch(() => {
+      toast.add({
+        title: t("swipe.errorTitle"),
+        description: t("swipe.errorDescription"),
+        icon: "i-lucide-alert-circle",
+        color: "error",
+      });
+    });
 }
 
 async function onSwipeRight(item: CardItem) {
   if (busy.value) {
-    return
+    return;
   }
-  busy.value = true
+  busy.value = true;
   try {
-    await postSwipe('like', item)
-    await advanceToNextCard()
-  } catch {
-    loading.value = false
-    toast.add({
-      title: t('swipe.errorTitle'),
-      description: t('swipe.errorDescription'),
-      icon: 'i-lucide-alert-circle',
-      color: 'error'
-    })
-    deck.value?.restore()
+    postSwipeInBackground("like", item);
+    await goToNextCard();
   } finally {
-    busy.value = false
+    busy.value = false;
   }
 }
 
 async function onSwipeLeft(item: CardItem) {
   if (busy.value) {
-    return
+    return;
   }
-  busy.value = true
+  busy.value = true;
   try {
-    await postSwipe('dislike', item)
-    await advanceToNextCard()
-  } catch {
-    loading.value = false
-    toast.add({
-      title: t('swipe.errorTitle'),
-      description: t('swipe.errorDescription'),
-      icon: 'i-lucide-alert-circle',
-      color: 'error'
-    })
-    deck.value?.restore()
+    postSwipeInBackground("dislike", item);
+    await goToNextCard();
   } finally {
-    busy.value = false
+    busy.value = false;
   }
 }
 
 async function onSkip(_item: CardItem) {
   if (busy.value) {
-    return
+    return;
   }
-  busy.value = true
+  busy.value = true;
   try {
-    await advanceToNextCard()
+    await skipToBack();
   } finally {
-    busy.value = false
+    busy.value = false;
   }
 }
 
 function btnDislike() {
-  deck.value?.swipeLeft()
+  deck.value?.swipeLeft();
 }
 function btnLike() {
-  deck.value?.swipeRight()
+  deck.value?.swipeRight();
 }
 function btnSkip() {
-  deck.value?.skip()
+  deck.value?.skip();
+}
+
+function onSwipeDragStart() {
+  isScrollLocked.value = true;
+}
+
+function onSwipeDragEnd() {
+  isScrollLocked.value = false;
 }
 
 onMounted(() => {
-  loading.value = true
-  void advanceToNextCard()
-})
+  void loadDeck();
+});
 </script>
 
 <template>
   <div class="flex flex-col items-center gap-4">
-    <div
-      v-if="done"
-      class="text-center space-y-4"
-    >
+    <div v-if="done" class="text-center space-y-4">
       <UIcon
         name="i-lucide-check-circle"
         class="w-16 h-16 text-primary mx-auto"
@@ -256,6 +229,8 @@ onMounted(() => {
         @swipe-right="onSwipeRight"
         @swipe-top="onSkip"
         @skip="onSkip"
+        @dragstart="onSwipeDragStart"
+        @dragend="onSwipeDragEnd"
       >
         <template #default="{ item }">
           <UCard class="text-center select-none relative overflow-visible">
@@ -317,10 +292,7 @@ onMounted(() => {
               name="i-lucide-loader-2"
               class="h-8 w-8 animate-spin shrink-0"
             />
-            <span
-              v-if="loading"
-              class="text-sm"
-            >
+            <span v-if="loading" class="text-sm">
               {{ $t("swipe.loadingNext") }}
             </span>
           </div>

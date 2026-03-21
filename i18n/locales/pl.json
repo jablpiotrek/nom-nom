@@ -1,10 +1,10 @@
 {
   "meta": {
     "title": "nom-nom — znajdź imię!",
-    "description": "Przesuwaj karty z imionami razem z partnerem! Znajdźcie imię, które pokochacie oboje."
+    "description": "Przesuwaj karty z imionami razem z partnerem! Znajdźcie imię, które polubicie oboje."
   },
   "home": {
-    "tagline": "Przesuwaj karty z imionami razem z partnerem! Znajdźcie imię, które pokochacie oboje.",
+    "tagline": "Przesuwaj karty z imionami razem z partnerem! Znajdźcie imię, które polubicie oboje.",
     "tabs": {
       "join": "Dołącz do gry",
       "create": "Nowa gra"
@@ -83,7 +83,7 @@
     "doneSubtitle": "To już wszystkie imiona. Sprawdź dopasowania!",
     "viewMatches": "Zobacz dopasowania",
     "matchTitle": "Dopasowanie!",
-    "matchDescription": "Oboje kochacie imię „{name}”!",
+    "matchDescription": "Oboje polubiliście imię „{name}”!",
     "errorTitle": "Błąd",
     "errorDescription": "Coś poszło nie tak"
   },

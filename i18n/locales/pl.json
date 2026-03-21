@@ -110,5 +110,9 @@
   },
   "common": {
     "errorGeneric": "Coś poszło nie tak"
+  },
+  "footer": {
+    "copyright": "© {year} Piotr Jabłoński",
+    "languageSwitch": "Język interfejsu"
   }
 }

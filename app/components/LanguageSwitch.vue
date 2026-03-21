@@ -29,7 +29,7 @@ async function pick(code: string) {
   <div
     class="inline-flex items-center gap-0.5 rounded-lg border border-default p-0.5"
     role="group"
-    :aria-label="t('header.languageSwitch')"
+    :aria-label="t('footer.languageSwitch')"
   >
     <UButton
       v-for="opt in options"

@@ -16,11 +16,54 @@ const props = defineProps<{
 
 const toast = useToast();
 const { t } = useI18n();
+const loading = useSwipeDeckLoading();
+
+type UndoState =
+  | { kind: "none" }
+  | { kind: "pending"; item: CardItem }
+  | { kind: "available"; item: CardItem }
+  | { kind: "blockedMatch" };
 
 /** Shuffled queue: head is current card; tail is upcoming */
 const remaining = ref<CardItem[]>([]);
-const loading = ref(true);
-const busy = ref(false);
+const skipBusy = ref(false);
+const undoBusy = ref(false);
+const undoState = ref<UndoState>({ kind: "none" });
+
+/** Monotonic: only the latest swipe’s POST may update `undoState`. */
+const swipeEpoch = ref(0);
+
+/** Resolves when the latest swipe’s POST settles (success or fail). */
+const pendingSwipeSettled = shallowRef<Promise<void> | null>(null);
+
+const interactionLocked = computed(() => undoBusy.value || skipBusy.value);
+
+const undoTooltipText = computed(() => {
+  switch (undoState.value.kind) {
+    case "pending":
+      return t("swipe.undoPendingTooltip");
+    case "blockedMatch":
+      return t("swipe.undoBlockedMatchTooltip");
+    case "available":
+      return t("swipe.undoTooltip");
+    default:
+      return t("swipe.undoNoneTooltip");
+  }
+});
+
+/** Undo control always visible; only `available` (and not busy) is clickable. */
+const undoControlDisabled = computed(() => {
+  if (undoState.value.kind === "available") {
+    return undoBusy.value || skipBusy.value;
+  }
+  return true;
+});
+
+const undoControlLoading = computed(
+  () =>
+    undoState.value.kind === "pending" ||
+    (undoState.value.kind === "available" && undoBusy.value)
+);
 
 const items = computed(() => {
   const head = remaining.value[0];
@@ -98,74 +141,138 @@ async function skipToBack() {
   await resetDeck();
 }
 
-/**
- * Persists swipe in the background so advancing the deck is not blocked on network.
- * On failure, the name may still appear again after refresh (not in DB until saved).
- */
-function postSwipeInBackground(action: "like" | "dislike", item: CardItem) {
-  void $fetch(`/api/games/${props.gameId}/swipe`, {
+function postSwipe(
+  action: "like" | "dislike",
+  item: CardItem
+): Promise<{ matched: boolean; matchedName: string | null }> {
+  return $fetch(`/api/games/${props.gameId}/swipe`, {
     method: "POST",
     body: {
       nameId: item.nameId,
       parent: props.parent,
       action,
     },
-  })
-    .then(({ matched, matchedName }) => {
-      if (matched) {
+  });
+}
+
+/**
+ * Fire-and-forget POST for this card; advance immediately. Older POSTs keep running.
+ * Only the latest swipe drives undo UI (epoch).
+ */
+function queueSwipe(action: "like" | "dislike", item: CardItem) {
+  if (undoBusy.value || skipBusy.value) {
+    return;
+  }
+  swipeEpoch.value += 1;
+  const epoch = swipeEpoch.value;
+  const snapshot: CardItem = { nameId: item.nameId, name: item.name };
+
+  let resolvePending: (() => void) | undefined;
+  pendingSwipeSettled.value = new Promise<void>((resolve) => {
+    resolvePending = resolve;
+  });
+
+  undoState.value = { kind: "pending", item: snapshot };
+
+  void postSwipe(action, snapshot)
+    .then((res) => {
+      if (epoch !== swipeEpoch.value) {
+        return;
+      }
+      if (action === "like" && res.matched) {
         toast.add({
           title: t("swipe.matchTitle"),
-          description: t("swipe.matchDescription", { name: matchedName }),
+          description: t("swipe.matchDescription", {
+            name: res.matchedName ?? "",
+          }),
           icon: "i-lucide-heart",
           color: "success",
         });
+        undoState.value = { kind: "blockedMatch" };
+      } else {
+        undoState.value = { kind: "available", item: snapshot };
       }
     })
     .catch(() => {
+      if (epoch !== swipeEpoch.value) {
+        return;
+      }
+      undoState.value = { kind: "none" };
+      remaining.value = [snapshot, ...remaining.value];
       toast.add({
         title: t("swipe.errorTitle"),
         description: t("swipe.errorDescription"),
         icon: "i-lucide-alert-circle",
         color: "error",
       });
+      void nextTick().then(() => {
+        void resetDeck();
+        deck.value?.restore();
+      });
+    })
+    .finally(() => {
+      resolvePending?.();
     });
+
+  void goToNextCard();
 }
 
-async function onSwipeRight(item: CardItem) {
-  if (busy.value) {
-    return;
-  }
-  busy.value = true;
-  try {
-    postSwipeInBackground("like", item);
-    await goToNextCard();
-  } finally {
-    busy.value = false;
-  }
+function onSwipeRight(item: CardItem) {
+  queueSwipe("like", item);
 }
 
-async function onSwipeLeft(item: CardItem) {
-  if (busy.value) {
+function onSwipeLeft(item: CardItem) {
+  queueSwipe("dislike", item);
+}
+
+async function undoLastSwipe() {
+  if (undoBusy.value || skipBusy.value) {
     return;
   }
-  busy.value = true;
+  if (undoState.value.kind === "pending" && pendingSwipeSettled.value) {
+    await pendingSwipeSettled.value;
+  }
+  if (undoState.value.kind !== "available") {
+    return;
+  }
+  const { item } = undoState.value;
+  undoBusy.value = true;
   try {
-    postSwipeInBackground("dislike", item);
-    await goToNextCard();
+    await $fetch(`/api/games/${props.gameId}/swipe`, {
+      method: "DELETE",
+      query: {
+        nameId: item.nameId,
+        parent: props.parent,
+      },
+    });
+    remaining.value = [item, ...remaining.value];
+    undoState.value = { kind: "none" };
+    await nextTick();
+    await resetDeck();
+  } catch {
+    toast.add({
+      title: t("swipe.undoFailedTitle"),
+      description: t("swipe.undoFailedDescription"),
+      icon: "i-lucide-alert-circle",
+      color: "error",
+    });
   } finally {
-    busy.value = false;
+    undoBusy.value = false;
   }
 }
 
 async function onSkip(_item: CardItem) {
-  if (busy.value) {
+  if (interactionLocked.value) {
     return;
   }
-  busy.value = true;
+  undoState.value = { kind: "none" };
+  swipeEpoch.value += 1;
+  pendingSwipeSettled.value = null;
+  skipBusy.value = true;
   try {
     await skipToBack();
   } finally {
-    busy.value = false;
+    skipBusy.value = false;
   }
 }
 
@@ -190,6 +297,10 @@ function onSwipeDragEnd() {
 onMounted(() => {
   void loadDeck();
 });
+
+onUnmounted(() => {
+  loading.value = false;
+});
 </script>
 
 <template>
@@ -205,6 +316,26 @@ onMounted(() => {
       <p class="max-w-xs text-sm text-muted sm:max-w-none sm:text-base">
         {{ $t("swipe.doneSubtitle") }}
       </p>
+      <div class="flex justify-center">
+        <UTooltip :text="undoTooltipText">
+          <UButton
+            icon="i-lucide-undo-2"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            class="shrink-0"
+            :class="{
+              '!cursor-pointer': !undoControlDisabled,
+              '!cursor-not-allowed opacity-60':
+                undoControlDisabled && !undoControlLoading,
+            }"
+            :aria-label="$t('swipe.undoAria')"
+            :loading="undoControlLoading"
+            :disabled="undoControlDisabled"
+            @click="undoLastSwipe"
+          />
+        </UTooltip>
+      </div>
       <UButton
         :to="`/${gameId}/match`"
         :label="$t('swipe.viewMatches')"
@@ -215,91 +346,97 @@ onMounted(() => {
     </div>
 
     <template v-else>
-      <FlashCards
-        ref="deck"
-        :items="items"
-        item-key="nameId"
-        :swipe-direction="['left', 'right', 'top']"
-        :stack="0"
-        :swipe-threshold="100"
-        :wait-animation-end="true"
-        :disable-drag="busy"
-        class="w-full max-w-sm min-h-0"
-        @swipe-left="onSwipeLeft"
-        @swipe-right="onSwipeRight"
-        @swipe-top="onSkip"
-        @skip="onSkip"
-        @dragstart="onSwipeDragStart"
-        @dragend="onSwipeDragEnd"
-      >
-        <template #default="{ item }">
-          <UCard class="text-center select-none relative overflow-visible">
-            <div class="py-8">
-              <p class="text-5xl font-bold">
-                {{ item.name }}
-              </p>
+      <!-- Stacking wrapper: controls sit below in DOM; keep deck above while dragging -->
+      <div class="relative z-50 isolate w-full max-w-sm min-h-0">
+        <FlashCards
+          ref="deck"
+          :items="items"
+          item-key="nameId"
+          :swipe-direction="['left', 'right', 'top']"
+          :stack="0"
+          :swipe-threshold="100"
+          :wait-animation-end="true"
+          :disable-drag="interactionLocked"
+          class="w-full min-h-0"
+          @swipe-left="onSwipeLeft"
+          @swipe-right="onSwipeRight"
+          @swipe-top="onSkip"
+          @skip="onSkip"
+          @dragstart="onSwipeDragStart"
+          @dragend="onSwipeDragEnd"
+        >
+          <template #default="{ item }">
+            <UCard class="text-center select-none relative overflow-visible">
+              <div class="py-8">
+                <p class="text-5xl font-bold">
+                  {{ item.name }}
+                </p>
+              </div>
+            </UCard>
+          </template>
+
+          <template #left="{ delta }">
+            <div
+              class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg px-4"
+              :style="{ opacity: swipeBadgeOpacity(delta) }"
+            >
+              <span
+                class="rounded-lg border-4 border-error bg-default/90 px-4 py-2 font-bold text-error text-xl uppercase tracking-widest shadow-lg rotate-[-10deg] backdrop-blur-sm"
+              >
+                {{ $t("swipe.badgeNope") }}
+              </span>
             </div>
-          </UCard>
-        </template>
+          </template>
+          <template #right="{ delta }">
+            <div
+              class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg px-4"
+              :style="{ opacity: swipeBadgeOpacity(delta) }"
+            >
+              <span
+                class="rounded-lg border-4 border-success bg-default/90 px-4 py-2 font-bold text-success text-xl uppercase tracking-widest shadow-lg rotate-10 backdrop-blur-sm"
+              >
+                {{ $t("swipe.badgeLike") }}
+              </span>
+            </div>
+          </template>
+          <template #top="{ delta }">
+            <div
+              class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg px-4"
+              :style="{ opacity: swipeBadgeOpacity(delta) }"
+            >
+              <span
+                class="rounded-lg border-4 border-neutral-400 bg-default/90 px-4 py-2 font-bold text-muted text-xl uppercase tracking-widest shadow-lg backdrop-blur-sm dark:border-neutral-600"
+              >
+                {{ $t("swipe.badgeLater") }}
+              </span>
+            </div>
+          </template>
 
-        <template #left="{ delta }">
-          <div
-            class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg px-4"
-            :style="{ opacity: swipeBadgeOpacity(delta) }"
-          >
-            <span
-              class="rounded-lg border-4 border-error bg-default/90 px-4 py-2 font-bold text-error text-xl uppercase tracking-widest shadow-lg rotate-[-10deg] backdrop-blur-sm"
-            >
-              {{ $t("swipe.badgeNope") }}
-            </span>
-          </div>
-        </template>
-        <template #right="{ delta }">
-          <div
-            class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg px-4"
-            :style="{ opacity: swipeBadgeOpacity(delta) }"
-          >
-            <span
-              class="rounded-lg border-4 border-success bg-default/90 px-4 py-2 font-bold text-success text-xl uppercase tracking-widest shadow-lg rotate-10 backdrop-blur-sm"
-            >
-              {{ $t("swipe.badgeLike") }}
-            </span>
-          </div>
-        </template>
-        <template #top="{ delta }">
-          <div
-            class="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg px-4"
-            :style="{ opacity: swipeBadgeOpacity(delta) }"
-          >
-            <span
-              class="rounded-lg border-4 border-neutral-400 bg-default/90 px-4 py-2 font-bold text-muted text-xl uppercase tracking-widest shadow-lg backdrop-blur-sm dark:border-neutral-600"
-            >
-              {{ $t("swipe.badgeLater") }}
-            </span>
-          </div>
-        </template>
-
-        <!--
+          <!--
           Library shows this slot whenever there's a single card (index >= length-1).
           Must always render a root node or Vue falls back to default "No more cards!".
         -->
-        <template #empty>
-          <div
-            class="flex min-h-[100px] flex-col items-center justify-center gap-1.5 py-4 text-muted"
-          >
-            <UIcon
-              v-if="loading"
-              name="i-lucide-loader-2"
-              class="h-8 w-8 animate-spin shrink-0"
-            />
-            <span v-if="loading" class="text-sm">
-              {{ $t("swipe.loadingNext") }}
-            </span>
-          </div>
-        </template>
-      </FlashCards>
+          <template #empty>
+            <div
+              class="flex min-h-[100px] flex-col items-center justify-center gap-1.5 py-4 text-muted"
+            >
+              <UIcon
+                v-if="loading"
+                name="i-lucide-loader-2"
+                class="h-8 w-8 animate-spin shrink-0"
+              />
+              <span v-if="loading" class="text-sm">
+                {{ $t("swipe.loadingNext") }}
+              </span>
+            </div>
+          </template>
+        </FlashCards>
+      </div>
 
-      <div class="flex items-center gap-6">
+      <div
+        v-if="!loading"
+        class="relative z-0 flex flex-nowrap items-center justify-center gap-4 sm:gap-6"
+      >
         <UTooltip :text="$t('swipe.tooltipDislike')">
           <UButton
             icon="i-lucide-x"
@@ -307,11 +444,31 @@ onMounted(() => {
             size="xl"
             color="error"
             variant="soft"
-            class="rounded-full !p-4 !cursor-pointer disabled:!cursor-not-allowed"
-            :disabled="busy || !items.length"
+            class="shrink-0 rounded-full !p-4 !cursor-pointer disabled:!cursor-not-allowed"
+            :disabled="interactionLocked || !items.length"
             @click="btnDislike"
           />
         </UTooltip>
+
+        <UTooltip :text="undoTooltipText">
+          <UButton
+            icon="i-lucide-undo-2"
+            color="neutral"
+            variant="ghost"
+            size="lg"
+            class="shrink-0 rounded-full !p-3"
+            :class="{
+              '!cursor-pointer': !undoControlDisabled,
+              '!cursor-not-allowed opacity-60':
+                undoControlDisabled && !undoControlLoading,
+            }"
+            :aria-label="$t('swipe.undoAria')"
+            :loading="undoControlLoading"
+            :disabled="undoControlDisabled"
+            @click="undoLastSwipe"
+          />
+        </UTooltip>
+
         <UTooltip :text="$t('swipe.tooltipSkip')">
           <UButton
             icon="i-lucide-clock"
@@ -319,11 +476,12 @@ onMounted(() => {
             size="lg"
             color="neutral"
             variant="ghost"
-            class="rounded-full !p-3 !cursor-pointer disabled:!cursor-not-allowed"
-            :disabled="busy || !items.length"
+            class="shrink-0 rounded-full !p-3 !cursor-pointer disabled:!cursor-not-allowed"
+            :disabled="interactionLocked || !items.length"
             @click="btnSkip"
           />
         </UTooltip>
+
         <UTooltip :text="$t('swipe.tooltipLike')">
           <UButton
             icon="i-lucide-heart"
@@ -331,14 +489,17 @@ onMounted(() => {
             size="xl"
             color="success"
             variant="soft"
-            class="rounded-full !p-4 !cursor-pointer disabled:!cursor-not-allowed"
-            :disabled="busy || !items.length"
+            class="shrink-0 rounded-full !p-4 !cursor-pointer disabled:!cursor-not-allowed"
+            :disabled="interactionLocked || !items.length"
             @click="btnLike"
           />
         </UTooltip>
       </div>
 
-      <p class="text-sm text-muted text-center max-w-xs">
+      <p
+        v-if="!loading"
+        class="relative z-0 text-sm text-muted text-center max-w-xs"
+      >
         {{ $t("swipe.hint") }}
       </p>
     </template>

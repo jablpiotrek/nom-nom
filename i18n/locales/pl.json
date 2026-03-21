@@ -50,9 +50,8 @@
       "authTitle": "Wpisz PIN",
       "authSubtitle": "Poproś partnerkę/partnera o PIN, aby dołączyć do tej gry",
       "mommyTitle": "Kolej na mamę",
-      "mommySubtitle": "Polub, pomiń lub odrzuć każde imię",
       "daddyTitle": "Kolej na tatę",
-      "daddySubtitle": "Polub, pomiń lub odrzuć każde imię",
+      "swipeSubtitle": "Polub, pomiń lub odrzuć każde imię",
       "hubTitle": "Twoja gra",
       "hubSubtitle": "Udostępnij ten kod i PIN partnerce/partnerowi"
     }
@@ -71,7 +70,7 @@
     "badgeNope": "Nie",
     "badgeLike": "Tak",
     "badgeLater": "Później",
-    "loadingNext": "Ładowanie kolejnego imienia…",
+    "loadingNext": "Ładowanie...",
     "tooltipDislike": "Nie dla nas",
     "tooltipSkip": "Na razie pomiń",
     "tooltipLike": "Uwielbiam!",
@@ -85,7 +84,14 @@
     "matchTitle": "Dopasowanie!",
     "matchDescription": "Oboje polubiliście imię „{name}”!",
     "errorTitle": "Błąd",
-    "errorDescription": "Coś poszło nie tak"
+    "errorDescription": "Coś poszło nie tak",
+    "undoTooltip": "Cofnij ostatnią decyzję",
+    "undoNoneTooltip": "Nie można cofnąć",
+    "undoAria": "Cofnij ostatnią decyzję",
+    "undoBlockedMatchTooltip": "Nie można cofnąć dopasowania",
+    "undoPendingTooltip": "Poczekaj, aż ostatnia decyzja się zapisze",
+    "undoFailedTitle": "Nie można cofnąć",
+    "undoFailedDescription": "Coś poszło nie tak. Spróbuj ponownie."
   },
   "hub": {
     "imMommy": "Jestem mamą",

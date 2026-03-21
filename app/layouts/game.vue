@@ -1,6 +1,19 @@
 <script setup lang="ts">
 const route = useRoute()
 const { t } = useI18n()
+const deckLoading = useSwipeDeckLoading()
+
+watch(
+  () => route.params.role,
+  (role) => {
+    if (role === 'mommy' || role === 'daddy') {
+      deckLoading.value = true
+    } else {
+      deckLoading.value = false
+    }
+  },
+  { immediate: true }
+)
 
 const gameId = computed(() => String(route.params.uuid ?? ''))
 
@@ -27,13 +40,13 @@ const header = computed(() => {
   if (s === 'mommy') {
     return {
       title: t('layout.game.mommyTitle'),
-      subtitle: t('layout.game.mommySubtitle')
+      subtitle: deckLoading.value ? undefined : t('layout.game.swipeSubtitle')
     }
   }
   if (s === 'daddy') {
     return {
       title: t('layout.game.daddyTitle'),
-      subtitle: t('layout.game.daddySubtitle')
+      subtitle: deckLoading.value ? undefined : t('layout.game.swipeSubtitle')
     }
   }
 

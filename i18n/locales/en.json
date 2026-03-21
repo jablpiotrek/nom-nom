@@ -50,9 +50,8 @@
       "authTitle": "Enter PIN",
       "authSubtitle": "Ask your partner for the PIN to join this game",
       "mommyTitle": "Mommy's turn",
-      "mommySubtitle": "Like, skip, or pass on each name",
       "daddyTitle": "Daddy's turn",
-      "daddySubtitle": "Like, skip, or pass on each name",
+      "swipeSubtitle": "Like, skip, or pass on each name",
       "hubTitle": "Your game",
       "hubSubtitle": "Share this code and your PIN with your partner"
     }
@@ -71,7 +70,7 @@
     "badgeNope": "Nope",
     "badgeLike": "Like",
     "badgeLater": "Later",
-    "loadingNext": "Loading next name…",
+    "loadingNext": "Loading...",
     "tooltipDislike": "Not for us",
     "tooltipSkip": "Skip for now",
     "tooltipLike": "Love it!",
@@ -85,7 +84,14 @@
     "matchTitle": "It's a match!",
     "matchDescription": "You both love \"{name}\"!",
     "errorTitle": "Error",
-    "errorDescription": "Something went wrong"
+    "errorDescription": "Something went wrong",
+    "undoTooltip": "Undo last swipe",
+    "undoNoneTooltip": "Nothing to undo",
+    "undoAria": "Undo last swipe",
+    "undoBlockedMatchTooltip": "You can’t undo a match",
+    "undoPendingTooltip": "Wait until your last swipe is saved",
+    "undoFailedTitle": "Couldn’t undo",
+    "undoFailedDescription": "Something went wrong. Try again."
   },
   "hub": {
     "imMommy": "I'm Mommy",

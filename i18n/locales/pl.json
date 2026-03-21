@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "title": "nom-nom — znajdź imię!",
+    "description": "Przesuwaj karty z imionami razem z partnerem! Znajdźcie imię, które pokochacie oboje."
+  },
+  "home": {
+    "tagline": "Przesuwaj karty z imionami razem z partnerem! Znajdźcie imię, które pokochacie oboje.",
+    "tabs": {
+      "join": "Dołącz do gry",
+      "create": "Nowa gra"
+    },
+    "sex": {
+      "girl": "Dziewczynka",
+      "boy": "Chłopiec"
+    },
+    "join": {
+      "gameIdLabel": "Kod gry",
+      "gameIdDescription": "Poproś partnerkę/partnera o kod gry",
+      "gameIdPlaceholder": "np. ABC123",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "Wpisz PIN",
+      "submit": "Dołącz do gry"
+    },
+    "create": {
+      "expectingLabel": "Płeć diecka",
+      "pinAlertTitle": "Wybierz PIN, który zapamiętasz",
+      "pinAlertDescription": "Po utworzeniu gry ten PIN już nie będzie wyświetlany. Będzie potrzebny, by odblokować grę na innym urządzeniu oraz aby partner lub partnerka mogła dołączyć.",
+      "pinAlertExpand": "Pokaż pełną informację o PIN",
+      "pinAlertCollapse": "Ukryj informację o PIN",
+      "pinLabel": "PIN",
+      "pinDescription": "Co najmniej 4 znaki. Udostępnij go partnerce/partnerowi, żeby mogła/mógł dołączyć.",
+      "pinPlaceholder": "Wpisz PIN",
+      "confirmPinLabel": "Potwierdź PIN",
+      "confirmPinPlaceholder": "Wpisz PIN ponownie",
+      "submit": "Utwórz grę"
+    },
+    "errors": {
+      "enterGameId": "Wpisz kod gry",
+      "enterPin": "Wpisz PIN",
+      "invalidJoin": "Nieprawidłowy kod gry lub PIN",
+      "pinMin": "PIN musi mieć co najmniej 4 znaki",
+      "pinMismatch": "PIN-y się nie zgadzają",
+      "generic": "Coś poszło nie tak"
+    }
+  },
+  "layout": {
+    "game": {
+      "matchesTitle": "Dopasowania",
+      "matchesSubtitle": "Imiona, które lubicie oboje",
+      "authTitle": "Wpisz PIN",
+      "authSubtitle": "Poproś partnerkę/partnera o PIN, aby dołączyć do tej gry",
+      "mommyTitle": "Kolej na mamę",
+      "mommySubtitle": "Polub, pomiń lub odrzuć każde imię",
+      "daddyTitle": "Kolej na tatę",
+      "daddySubtitle": "Polub, pomiń lub odrzuć każde imię",
+      "hubTitle": "Twoja gra",
+      "hubSubtitle": "Udostępnij ten kod i PIN partnerce/partnerowi"
+    }
+  },
+  "header": {
+    "copySuccessTitle": "Skopiowano",
+    "copySuccessDescription": "Kod gry skopiowany do schowka",
+    "copyFailTitle": "Nie udało się skopiować",
+    "copyFailDescription": "Spróbuj zaznaczyć kod ręcznie",
+    "copyGameIdAria": "Skopiuj kod gry",
+    "languageSwitch": "Język interfejsu",
+    "localeEn": "Angielski",
+    "localePl": "Polski"
+  },
+  "swipe": {
+    "badgeNope": "Nie",
+    "badgeLike": "Tak",
+    "badgeLater": "Później",
+    "loadingNext": "Ładowanie kolejnego imienia…",
+    "tooltipDislike": "Nie dla nas",
+    "tooltipSkip": "Na razie pomiń",
+    "tooltipLike": "Uwielbiam!",
+    "ariaDislike": "Nie dla nas",
+    "ariaSkip": "Na razie pomiń",
+    "ariaLike": "Uwielbiam!",
+    "hint": "Przesuń kartę w lewo / prawo / w górę albo użyj przycisków",
+    "doneTitle": "Gotowe!",
+    "doneSubtitle": "To już wszystkie imiona. Sprawdź dopasowania!",
+    "viewMatches": "Zobacz dopasowania",
+    "matchTitle": "To dopasowanie!",
+    "matchDescription": "Oboje kochacie imię „{name}”!",
+    "errorTitle": "Błąd",
+    "errorDescription": "Coś poszło nie tak"
+  },
+  "hub": {
+    "imMommy": "Jestem mamą",
+    "imDaddy": "Jestem tatą",
+    "or": "lub",
+    "viewMatches": "Zobacz dopasowania"
+  },
+  "auth": {
+    "pinLabel": "PIN",
+    "pinPlaceholder": "Wpisz PIN",
+    "submit": "Dołącz do gry",
+    "errors": {
+      "enterPin": "Wpisz PIN",
+      "invalidPin": "Nieprawidłowy PIN"
+    }
+  },
+  "match": {
+    "empty": "Na razie brak dopasowań. Swipuj dalej!"
+  },
+  "game": {
+    "backToGame": "Wróć do gry"
+  },
+  "common": {
+    "errorGeneric": "Coś poszło nie tak"
+  }
+}

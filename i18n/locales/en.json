@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "title": "nom-nom — find the name",
+    "description": "Swipe on baby names with your partner. Find the name you both love."
+  },
+  "home": {
+    "tagline": "Swipe on baby names with your partner. Find the name you both love.",
+    "tabs": {
+      "join": "Join Game",
+      "create": "New Game"
+    },
+    "sex": {
+      "girl": "Girl",
+      "boy": "Boy"
+    },
+    "join": {
+      "gameIdLabel": "Game ID",
+      "gameIdDescription": "Ask your partner for the game code",
+      "gameIdPlaceholder": "e.g. ABC123",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "Enter PIN",
+      "submit": "Join Game"
+    },
+    "create": {
+      "expectingLabel": "We're expecting a...",
+      "pinAlertTitle": "Choose a PIN you can remember",
+      "pinAlertDescription": "We never show this PIN again after you create the game. You'll need it to unlock the game on another device and to share with your partner so they can join.",
+      "pinAlertExpand": "Show full PIN notice",
+      "pinAlertCollapse": "Hide PIN notice",
+      "pinLabel": "PIN",
+      "pinDescription": "At least 4 characters. Share it with your partner so they can join.",
+      "pinPlaceholder": "Enter PIN",
+      "confirmPinLabel": "Confirm PIN",
+      "confirmPinPlaceholder": "Re-enter PIN",
+      "submit": "Create Game"
+    },
+    "errors": {
+      "enterGameId": "Enter a game ID",
+      "enterPin": "Enter the PIN",
+      "invalidJoin": "Invalid game ID or PIN",
+      "pinMin": "PIN must be at least 4 characters",
+      "pinMismatch": "PINs do not match",
+      "generic": "Something went wrong"
+    }
+  },
+  "layout": {
+    "game": {
+      "matchesTitle": "Matches",
+      "matchesSubtitle": "Names you both loved",
+      "authTitle": "Enter PIN",
+      "authSubtitle": "Ask your partner for the PIN to join this game",
+      "mommyTitle": "Mommy's turn",
+      "mommySubtitle": "Like, skip, or pass on each name",
+      "daddyTitle": "Daddy's turn",
+      "daddySubtitle": "Like, skip, or pass on each name",
+      "hubTitle": "Your game",
+      "hubSubtitle": "Share this code and your PIN with your partner"
+    }
+  },
+  "header": {
+    "copySuccessTitle": "Copied",
+    "copySuccessDescription": "Game ID copied to clipboard",
+    "copyFailTitle": "Could not copy",
+    "copyFailDescription": "Try selecting the code manually",
+    "copyGameIdAria": "Copy game ID",
+    "languageSwitch": "Interface language",
+    "localeEn": "English",
+    "localePl": "Polish"
+  },
+  "swipe": {
+    "badgeNope": "Nope",
+    "badgeLike": "Like",
+    "badgeLater": "Later",
+    "loadingNext": "Loading next name…",
+    "tooltipDislike": "Not for us",
+    "tooltipSkip": "Skip for now",
+    "tooltipLike": "Love it!",
+    "ariaDislike": "Not for us",
+    "ariaSkip": "Skip for now",
+    "ariaLike": "Love it!",
+    "hint": "Swipe the card left / right / up, or use the buttons",
+    "doneTitle": "All done!",
+    "doneSubtitle": "You've seen every name. Check your matches!",
+    "viewMatches": "View Matches",
+    "matchTitle": "It's a match!",
+    "matchDescription": "You both love \"{name}\"!",
+    "errorTitle": "Error",
+    "errorDescription": "Something went wrong"
+  },
+  "hub": {
+    "imMommy": "I'm Mommy",
+    "imDaddy": "I'm Daddy",
+    "or": "or",
+    "viewMatches": "View Matches"
+  },
+  "auth": {
+    "pinLabel": "PIN",
+    "pinPlaceholder": "Enter PIN",
+    "submit": "Join Game",
+    "errors": {
+      "enterPin": "Please enter the PIN",
+      "invalidPin": "Invalid PIN"
+    }
+  },
+  "match": {
+    "empty": "No matches yet. Keep swiping!"
+  },
+  "game": {
+    "backToGame": "Back to game"
+  },
+  "common": {
+    "errorGeneric": "Something went wrong"
+  }
+}

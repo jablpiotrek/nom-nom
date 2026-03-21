@@ -1,6 +1,9 @@
 <script setup lang="ts">
 type CardItem = { nameId: number, name: string }
 
+/** Prefetch queue size: next card is often instant; rest load in background */
+const BUFFER_TARGET = 8
+
 const props = defineProps<{
   gameId: string
   parent: 'mommy' | 'daddy'
@@ -10,9 +13,11 @@ const toast = useToast()
 const { t } = useI18n()
 
 const items = ref<CardItem[]>([])
+const buffer = ref<CardItem[]>([])
 const loading = ref(true)
 const done = ref(false)
 const busy = ref(false)
+let bufferTopUpInFlight: Promise<void> | null = null
 
 /** FlashCards exposed API (vue3-flashcards) */
 const deck = ref<{
@@ -27,6 +32,94 @@ const deck = ref<{
 function swipeBadgeOpacity(delta: number) {
   const d = Math.abs(Number(delta) || 0)
   return Math.min(1, 0.2 + d * 4)
+}
+
+async function fetchNameBatch(
+  count: number,
+  excludeNameId?: number
+): Promise<CardItem[]> {
+  const params: Record<string, string | number> = {
+    parent: props.parent,
+    batch: count
+  }
+  if (excludeNameId != null) {
+    params.exclude = excludeNameId
+  }
+  const data = await $fetch<{
+    items?: CardItem[]
+    done?: boolean
+  }>(`/api/games/${props.gameId}/next-name`, {
+    params
+  })
+  if (data.done && (!data.items || data.items.length === 0)) {
+    return []
+  }
+  return data.items ?? []
+}
+
+function scheduleBufferTopUp() {
+  if (done.value) {
+    return
+  }
+  const need = BUFFER_TARGET - buffer.value.length
+  if (need <= 0 || bufferTopUpInFlight) {
+    return
+  }
+  bufferTopUpInFlight = (async () => {
+    try {
+      const fresh = await fetchNameBatch(need, items.value[0]?.nameId)
+      buffer.value.push(...fresh)
+    } catch {
+      /* prefetch is best-effort */
+    } finally {
+      bufferTopUpInFlight = null
+    }
+  })()
+}
+
+async function resetDeck() {
+  try {
+    await deck.value?.reset?.({ animate: false })
+  } catch {
+    /* ignore if deck not ready */
+  }
+}
+
+/**
+ * Show next card: pop from prefetch buffer (instant) or fetch a new batch.
+ */
+async function advanceToNextCard() {
+  if (buffer.value.length > 0) {
+    const next = buffer.value.shift()!
+    items.value = [next]
+    loading.value = false
+    scheduleBufferTopUp()
+    await nextTick()
+    await resetDeck()
+    return
+  }
+
+  const excludeWhileFetching = items.value[0]?.nameId
+
+  loading.value = true
+  items.value = []
+  try {
+    const batch = await fetchNameBatch(BUFFER_TARGET, excludeWhileFetching)
+    if (!batch.length) {
+      done.value = true
+      return
+    }
+    done.value = false
+    items.value = [batch[0]!]
+    buffer.value.push(...batch.slice(1))
+    scheduleBufferTopUp()
+    await nextTick()
+    await resetDeck()
+  } catch {
+    done.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 async function postSwipe(action: 'like' | 'dislike', item: CardItem) {
@@ -51,39 +144,14 @@ async function postSwipe(action: 'like' | 'dislike', item: CardItem) {
   }
 }
 
-async function loadNextCard() {
-  loading.value = true
-  try {
-    await deck.value?.reset?.({ animate: false })
-  } catch {
-    /* ignore if deck not ready */
-  }
-  items.value = []
-  try {
-    const data = await $fetch(`/api/games/${props.gameId}/next-name`, {
-      params: { parent: props.parent }
-    })
-    if (data.done) {
-      done.value = true
-    } else {
-      done.value = false
-      items.value = [{ nameId: data.nameId!, name: data.name! }]
-    }
-  } catch {
-    done.value = true
-  }
-  loading.value = false
-}
-
 async function onSwipeRight(item: CardItem) {
   if (busy.value) {
     return
   }
   busy.value = true
-  loading.value = true
   try {
     await postSwipe('like', item)
-    await loadNextCard()
+    await advanceToNextCard()
   } catch {
     loading.value = false
     toast.add({
@@ -103,10 +171,9 @@ async function onSwipeLeft(item: CardItem) {
     return
   }
   busy.value = true
-  loading.value = true
   try {
     await postSwipe('dislike', item)
-    await loadNextCard()
+    await advanceToNextCard()
   } catch {
     loading.value = false
     toast.add({
@@ -126,9 +193,8 @@ async function onSkip(_item: CardItem) {
     return
   }
   busy.value = true
-  loading.value = true
   try {
-    await loadNextCard()
+    await advanceToNextCard()
   } finally {
     busy.value = false
   }
@@ -144,7 +210,10 @@ function btnSkip() {
   deck.value?.skip()
 }
 
-onMounted(() => loadNextCard())
+onMounted(() => {
+  loading.value = true
+  void advanceToNextCard()
+})
 </script>
 
 <template>
@@ -244,12 +313,12 @@ onMounted(() => loadNextCard())
             class="flex min-h-[100px] flex-col items-center justify-center gap-1.5 py-4 text-muted"
           >
             <UIcon
-              v-if="loading || busy"
+              v-if="loading"
               name="i-lucide-loader-2"
               class="h-8 w-8 animate-spin shrink-0"
             />
             <span
-              v-if="loading || busy"
+              v-if="loading"
               class="text-sm"
             >
               {{ $t("swipe.loadingNext") }}

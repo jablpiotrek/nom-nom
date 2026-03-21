@@ -82,7 +82,7 @@
     "doneTitle": "Gotowe!",
     "doneSubtitle": "To już wszystkie imiona. Sprawdź dopasowania!",
     "viewMatches": "Zobacz dopasowania",
-    "matchTitle": "To dopasowanie!",
+    "matchTitle": "Dopasowanie!",
     "matchDescription": "Oboje kochacie imię „{name}”!",
     "errorTitle": "Błąd",
     "errorDescription": "Coś poszło nie tak"
@@ -106,7 +106,7 @@
     "empty": "Na razie brak dopasowań. Swipuj dalej!"
   },
   "game": {
-    "backToGame": "Wróć do gry"
+    "backToGame": "Wróć"
   },
   "common": {
     "errorGeneric": "Coś poszło nie tak"

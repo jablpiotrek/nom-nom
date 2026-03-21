@@ -1,22 +1,31 @@
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { names } from '../database/schema'
+import 'dotenv/config'
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
+import { names } from './schema'
 import boysData from './seed/boys.json'
 import girlsData from './seed/girls.json'
 
-const sqlite = new Database('sqlite.db')
-sqlite.pragma('journal_mode = WAL')
-const db = drizzle(sqlite)
+async function main() {
+  const url = process.env.TURSO_DATABASE_URL
+  const authToken = process.env.TURSO_AUTH_TOKEN
+  if (!url || authToken === undefined || authToken === null) {
+    console.error('Missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN in .env')
+    process.exit(1)
+  }
 
-const boyRows = boysData.map(name => ({ name, sex: 'boy' as const }))
-const girlRows = girlsData.map(name => ({ name, sex: 'girl' as const }))
+  const db = drizzle(createClient({ url, authToken }))
 
-db.insert(names)
-  .values([...boyRows, ...girlRows])
-  .onConflictDoNothing()
-  .run()
+  const boyRows = boysData.map(name => ({ name, sex: 'boy' as const }))
+  const girlRows = girlsData.map(name => ({ name, sex: 'girl' as const }))
 
-console.log(
-  `Seeded ${boyRows.length} boy names and ${girlRows.length} girl names.`
-)
-sqlite.close()
+  await db.insert(names).values([...boyRows, ...girlRows]).run()
+
+  console.log(
+    `Seeded ${boyRows.length} boy names and ${girlRows.length} girl names.`
+  )
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})

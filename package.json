@@ -4,18 +4,24 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
+    "vercel-build": "npm run db:migrate && nuxt build",
     "dev": "nuxt dev",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint . --fix",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx server/database/seed.ts"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.98",
     "@iconify-json/simple-icons": "^1.2.74",
+    "@libsql/client": "^0.15.15",
     "@nuxt/ui": "^4.5.1",
     "@nuxtjs/i18n": "^10.2.3",
-    "better-sqlite3": "^12.8.0",
     "drizzle-orm": "^0.45.1",
     "nuxt": "^4.4.2",
     "tailwindcss": "^4.2.1",
@@ -23,11 +29,17 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.15.2",
-    "@types/better-sqlite3": "^7.6.13",
+    "dotenv": "^16.6.1",
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.21.0",
     "eslint": "^10.0.3",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.5"
   },
-  "packageManager": "pnpm@10.32.1"
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "publicHoistPattern": [
+      "*@libsql*"
+    ]
+  }
 }

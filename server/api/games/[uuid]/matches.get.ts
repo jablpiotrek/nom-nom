@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
   verifyGameAuth(event, uuid)
 
-  const matches = db
+  const matches = await db
     .select({
       nameId: names.id,
       name: names.name

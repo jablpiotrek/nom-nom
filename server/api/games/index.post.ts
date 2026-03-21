@@ -30,12 +30,12 @@ export default defineEventHandler(async (event) => {
   }
 
   let id = generateGameId()
-  while (db.select().from(games).where(eq(games.id, id)).get()) {
+  while (await db.select().from(games).where(eq(games.id, id)).get()) {
     id = generateGameId()
   }
 
   const pinHash = hashPin(String(pin))
-  db.insert(games).values({ id, sex, pinHash }).run()
+  await db.insert(games).values({ id, sex, pinHash }).run()
   setGameCookie(event, id)
 
   return { id }

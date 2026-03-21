@@ -26,7 +26,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  db.insert(swipes)
+  await db
+    .insert(swipes)
     .values({
       gameId: uuid,
       nameId,
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
 
   if (action === 'like') {
     const otherParent = parent === 'mommy' ? 'daddy' : 'mommy'
-    const otherLike = db
+    const otherLike = await db
       .select()
       .from(swipes)
       .where(
@@ -55,7 +56,11 @@ export default defineEventHandler(async (event) => {
 
     if (otherLike) {
       matched = true
-      const name = db.select().from(names).where(eq(names.id, nameId)).get()
+      const name = await db
+        .select()
+        .from(names)
+        .where(eq(names.id, nameId))
+        .get()
       matchedName = name?.name ?? null
     }
   }

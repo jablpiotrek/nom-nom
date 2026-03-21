@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'PIN is required' })
   }
 
-  const game = db.select().from(games).where(eq(games.id, uuid)).get()
+  const game = await db.select().from(games).where(eq(games.id, uuid)).get()
   if (!game) {
     throw createError({ statusCode: 404, message: 'Game not found' })
   }

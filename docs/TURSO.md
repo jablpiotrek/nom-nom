@@ -93,7 +93,7 @@ Build command should run migrations before Nuxt build, e.g.:
 
 ## Troubleshooting
 
-- **`Please install '@libsql/client' for Drizzle Kit`** — From the project root run **`npm install`** or **`pnpm install`** so `node_modules/@libsql/client` exists. With **pnpm**, `package.json` → `pnpm.publicHoistPattern` hoists `@libsql/client` so `drizzle-kit` can resolve it; after changing that, reinstall: `rm -rf node_modules && pnpm install`.
+- **`Please install '@libsql/client' for Drizzle Kit`** — From the project root run **`npm install`** so `node_modules/@libsql/client` exists, then retry `drizzle-kit` / `db:migrate`.
 - **`TURSO_DATABASE_URL is missing`** — `.env` not loaded; ensure file is at repo root and variable names match exactly.
 - **`drizzle-kit` errors** — `drizzle.config.ts` loads `.env` via `dotenv`; run CLI commands from project root.
 - **Seed fails on duplicate names** — normal if you ran seed twice; use a fresh DB or adjust seed logic.

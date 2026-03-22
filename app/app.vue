@@ -1,6 +1,16 @@
 <script setup>
+const route = useRoute()
 const { locale, t } = useI18n()
 const year = new Date().getFullYear()
+
+/** Remount layout when its name changes so Vue does not reuse the default layout’s bare `<div>` root (fixes missing `max-w-md` / `gap-8` after client redirect from `/`). */
+const layoutKey = computed(() => {
+  const name = route.meta.layout
+  if (typeof name === 'string' && name.length > 0) {
+    return name
+  }
+  return 'default'
+})
 
 useHead(() => ({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
@@ -42,7 +52,7 @@ useSeoMeta({
       <!-- flex-1 fills space below header; flex-col + flex-1 container pushes footer down -->
       <UMain class="flex min-h-0 flex-1 flex-col">
         <UContainer class="min-h-0 flex-1 py-2">
-          <NuxtLayout>
+          <NuxtLayout :key="layoutKey">
             <NuxtPage />
           </NuxtLayout>
         </UContainer>

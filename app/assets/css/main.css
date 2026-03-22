@@ -54,6 +54,16 @@ body {
 }
 
 /*
+ * Native <button> defaults to arrow; links do not.
+ * Apply on the whole document: Nuxt UI modals/toasts use DialogPortal/ToastPortal → `body`,
+ * outside `#__nuxt`, so scoped rules never matched those controls.
+ */
+button:not(:disabled):not([aria-disabled="true"]),
+[role="button"]:not(:disabled):not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/*
  * Slimmer top bar; footer uses the same height so chrome matches.
  * Nuxt UI reads --ui-header-height for UHeader + UMain min-height math.
  */

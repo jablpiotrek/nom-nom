@@ -5,6 +5,7 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const uuid = route.params.uuid as string
+const { setResumeGameId, setResumeGameAndRole } = useGameResume()
 
 const pin = ref('')
 const error = ref('')
@@ -24,6 +25,13 @@ async function verify() {
       body: { pin: pin.value }
     })
     const redirect = (route.query.redirect as string) || `/${uuid}`
+    const path = redirect.split('?')[0] ?? redirect
+    const roleMatch = path.match(/^\/[^/]+\/(mommy|daddy)$/)
+    if (roleMatch?.[1] === 'mommy' || roleMatch?.[1] === 'daddy') {
+      setResumeGameAndRole(uuid, roleMatch[1])
+    } else {
+      setResumeGameId(uuid)
+    }
     await router.push(redirect)
   } catch (e: unknown) {
     error.value = getFetchErrorMessage(e) || t('auth.errors.invalidPin')

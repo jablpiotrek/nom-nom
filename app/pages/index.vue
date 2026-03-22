@@ -1,6 +1,20 @@
 <script setup lang="ts">
+import { readResume } from '~/utils/gameResume'
+
+definePageMeta({
+  middleware: ['home-resume-client']
+})
+
+/** Hide join/create until client checks resume (avoids flash before home-resume redirect). SSR stays empty too. */
+const showHomeContent = ref(false)
+
+onMounted(() => {
+  showHomeContent.value = readResume() === null
+})
+
 const router = useRouter()
 const { t } = useI18n()
+const { setResumeGameId } = useGameResume()
 
 const activeTab = ref('join')
 const error = ref('')
@@ -51,6 +65,7 @@ async function joinGame() {
       method: 'POST',
       body: { pin: joinPin.value }
     })
+    setResumeGameId(id)
     await router.push(`/${id}`)
   } catch (e: unknown) {
     error.value = getFetchErrorMessage(e) || t('home.errors.invalidJoin')
@@ -76,6 +91,7 @@ async function createGame() {
       method: 'POST',
       body: { sex: createSex.value, pin: createPin.value }
     })
+    setResumeGameId(id)
     await router.push(`/${id}`)
   } catch (e: unknown) {
     error.value = getFetchErrorMessage(e) || t('home.errors.generic')
@@ -86,165 +102,173 @@ async function createGame() {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto space-y-8">
-    <div class="text-center space-y-2">
-      <h1 class="text-2xl font-bold sm:text-3xl md:text-4xl">
-        nom-nom
-      </h1>
-      <p class="text-sm text-muted sm:text-base md:text-lg">
-        {{ $t("home.tagline") }}
-      </p>
-    </div>
-
-    <UTabs
-      v-model="activeTab"
-      :items="tabs"
-      class="w-full"
+  <div
+    class="max-w-md mx-auto min-h-[12rem]"
+    :aria-busy="!showHomeContent"
+  >
+    <div
+      v-if="showHomeContent"
+      class="space-y-8"
     >
-      <template #join>
-        <UCard class="mt-4">
-          <form
-            class="space-y-5"
-            @submit.prevent="joinGame"
-          >
-            <UFormField
-              :label="$t('home.join.gameIdLabel')"
-              :description="$t('home.join.gameIdDescription')"
+      <div class="text-center space-y-2">
+        <h1 class="text-2xl font-bold sm:text-3xl md:text-4xl">
+          nom-nom
+        </h1>
+        <p class="text-sm text-muted sm:text-base md:text-lg">
+          {{ $t("home.tagline") }}
+        </p>
+      </div>
+
+      <UTabs
+        v-model="activeTab"
+        :items="tabs"
+        class="w-full"
+      >
+        <template #join>
+          <UCard class="mt-4">
+            <form
+              class="space-y-5"
+              @submit.prevent="joinGame"
             >
-              <UInput
-                v-model="joinId"
-                :placeholder="$t('home.join.gameIdPlaceholder')"
-                icon="i-lucide-hash"
+              <UFormField
+                :label="$t('home.join.gameIdLabel')"
+                :description="$t('home.join.gameIdDescription')"
+              >
+                <UInput
+                  v-model="joinId"
+                  :placeholder="$t('home.join.gameIdPlaceholder')"
+                  icon="i-lucide-hash"
+                  size="lg"
+                  class="uppercase"
+                />
+              </UFormField>
+
+              <UFormField :label="$t('home.join.pinLabel')">
+                <UInput
+                  v-model="joinPin"
+                  type="password"
+                  :placeholder="$t('home.join.pinPlaceholder')"
+                  icon="i-lucide-lock"
+                  size="lg"
+                />
+              </UFormField>
+
+              <p
+                v-if="error && activeTab === 'join'"
+                class="text-sm text-error"
+              >
+                {{ error }}
+              </p>
+
+              <UButton
+                type="submit"
+                :label="$t('home.join.submit')"
+                icon="i-lucide-log-in"
                 size="lg"
-                class="uppercase"
+                block
+                :loading="loading"
               />
-            </UFormField>
+            </form>
+          </UCard>
+        </template>
 
-            <UFormField :label="$t('home.join.pinLabel')">
-              <UInput
-                v-model="joinPin"
-                type="password"
-                :placeholder="$t('home.join.pinPlaceholder')"
-                icon="i-lucide-lock"
-                size="lg"
-              />
-            </UFormField>
-
-            <p
-              v-if="error && activeTab === 'join'"
-              class="text-sm text-error"
+        <template #create>
+          <UCard class="mt-4">
+            <form
+              class="space-y-5"
+              @submit.prevent="createGame"
             >
-              {{ error }}
-            </p>
+              <UFormField :label="$t('home.create.expectingLabel')">
+                <URadioGroup
+                  v-model="createSex"
+                  :items="sexOptions"
+                  value-key="value"
+                />
+              </UFormField>
 
-            <UButton
-              type="submit"
-              :label="$t('home.join.submit')"
-              icon="i-lucide-log-in"
-              size="lg"
-              block
-              :loading="loading"
-            />
-          </form>
-        </UCard>
-      </template>
-
-      <template #create>
-        <UCard class="mt-4">
-          <form
-            class="space-y-5"
-            @submit.prevent="createGame"
-          >
-            <UFormField :label="$t('home.create.expectingLabel')">
-              <URadioGroup
-                v-model="createSex"
-                :items="sexOptions"
-                value-key="value"
-              />
-            </UFormField>
-
-            <UCollapsible
-              :unmount-on-hide="false"
-              class="w-full rounded-lg border border-default/60 bg-elevated/50 text-left"
-            >
-              <template #default="{ open }">
-                <button
-                  type="button"
-                  class="flex w-full items-start gap-3 rounded-t-lg p-3 text-sm transition-colors hover:bg-elevated/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-                  :aria-expanded="open"
-                  :aria-label="
-                    open
-                      ? $t('home.create.pinAlertCollapse')
-                      : $t('home.create.pinAlertExpand')
-                  "
-                >
-                  <UIcon
-                    name="i-lucide-key-round"
-                    class="mt-0.5 size-5 shrink-0 text-muted"
-                  />
-                  <span class="min-w-0 flex-1 font-medium text-highlighted">
-                    {{ $t("home.create.pinAlertTitle") }}
-                  </span>
-                  <UIcon
-                    :name="
-                      open ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'
+              <UCollapsible
+                :unmount-on-hide="false"
+                class="w-full rounded-lg border border-default/60 bg-elevated/50 text-left"
+              >
+                <template #default="{ open }">
+                  <button
+                    type="button"
+                    class="flex w-full items-start gap-3 rounded-t-lg p-3 text-sm transition-colors hover:bg-elevated/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                    :aria-expanded="open"
+                    :aria-label="
+                      open
+                        ? $t('home.create.pinAlertCollapse')
+                        : $t('home.create.pinAlertExpand')
                     "
-                    class="mt-0.5 size-5 shrink-0 text-muted"
-                  />
-                </button>
-              </template>
-              <template #content>
-                <div
-                  class="rounded-b-lg border-t border-default/40 px-3 pb-3 pl-11 pt-2 text-sm text-muted"
-                >
-                  {{ $t("home.create.pinAlertDescription") }}
-                </div>
-              </template>
-            </UCollapsible>
+                  >
+                    <UIcon
+                      name="i-lucide-key-round"
+                      class="mt-0.5 size-5 shrink-0 text-muted"
+                    />
+                    <span class="min-w-0 flex-1 font-medium text-highlighted">
+                      {{ $t("home.create.pinAlertTitle") }}
+                    </span>
+                    <UIcon
+                      :name="
+                        open ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'
+                      "
+                      class="mt-0.5 size-5 shrink-0 text-muted"
+                    />
+                  </button>
+                </template>
+                <template #content>
+                  <div
+                    class="rounded-b-lg border-t border-default/40 px-3 pb-3 pl-11 pt-2 text-sm text-muted"
+                  >
+                    {{ $t("home.create.pinAlertDescription") }}
+                  </div>
+                </template>
+              </UCollapsible>
 
-            <UFormField
-              :label="$t('home.create.pinLabel')"
-              :description="$t('home.create.pinDescription')"
-            >
-              <UInput
-                v-model="createPin"
-                type="password"
-                :placeholder="$t('home.create.pinPlaceholder')"
-                icon="i-lucide-lock"
+              <UFormField
+                :label="$t('home.create.pinLabel')"
+                :description="$t('home.create.pinDescription')"
+              >
+                <UInput
+                  v-model="createPin"
+                  type="password"
+                  :placeholder="$t('home.create.pinPlaceholder')"
+                  icon="i-lucide-lock"
+                  size="lg"
+                  autocomplete="new-password"
+                />
+              </UFormField>
+
+              <UFormField :label="$t('home.create.confirmPinLabel')">
+                <UInput
+                  v-model="createPinConfirm"
+                  type="password"
+                  :placeholder="$t('home.create.confirmPinPlaceholder')"
+                  icon="i-lucide-lock-keyhole"
+                  size="lg"
+                  autocomplete="new-password"
+                />
+              </UFormField>
+
+              <p
+                v-if="error && activeTab === 'create'"
+                class="text-sm text-error"
+              >
+                {{ error }}
+              </p>
+
+              <UButton
+                type="submit"
+                :label="$t('home.create.submit')"
+                icon="i-lucide-plus"
                 size="lg"
-                autocomplete="new-password"
+                block
+                :loading="loading"
               />
-            </UFormField>
-
-            <UFormField :label="$t('home.create.confirmPinLabel')">
-              <UInput
-                v-model="createPinConfirm"
-                type="password"
-                :placeholder="$t('home.create.confirmPinPlaceholder')"
-                icon="i-lucide-lock-keyhole"
-                size="lg"
-                autocomplete="new-password"
-              />
-            </UFormField>
-
-            <p
-              v-if="error && activeTab === 'create'"
-              class="text-sm text-error"
-            >
-              {{ error }}
-            </p>
-
-            <UButton
-              type="submit"
-              :label="$t('home.create.submit')"
-              icon="i-lucide-plus"
-              size="lg"
-              block
-              :loading="loading"
-            />
-          </form>
-        </UCard>
-      </template>
-    </UTabs>
+            </form>
+          </UCard>
+        </template>
+      </UTabs>
+    </div>
   </div>
 </template>

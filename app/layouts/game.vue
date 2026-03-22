@@ -1,19 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
 const { t } = useI18n()
-const deckLoading = useSwipeDeckLoading()
-
-watch(
-  () => route.params.role,
-  (role) => {
-    if (role === 'mommy' || role === 'daddy') {
-      deckLoading.value = true
-    } else {
-      deckLoading.value = false
-    }
-  },
-  { immediate: true }
-)
 
 const gameId = computed(() => String(route.params.uuid ?? ''))
 
@@ -40,13 +27,13 @@ const header = computed(() => {
   if (s === 'mommy') {
     return {
       title: t('layout.game.mommyTitle'),
-      subtitle: deckLoading.value ? undefined : t('layout.game.swipeSubtitle')
+      subtitle: t('layout.game.swipeSubtitle')
     }
   }
   if (s === 'daddy') {
     return {
       title: t('layout.game.daddyTitle'),
-      subtitle: deckLoading.value ? undefined : t('layout.game.swipeSubtitle')
+      subtitle: t('layout.game.swipeSubtitle')
     }
   }
 
@@ -58,9 +45,10 @@ const header = computed(() => {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto space-y-8">
+  <div class="mx-auto flex w-full max-w-md flex-col gap-4">
     <GameViewHeader
       v-if="gameId"
+      class="shrink-0"
       :game-id="gameId"
       :title="header.title"
       :subtitle="header.subtitle"

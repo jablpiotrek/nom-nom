@@ -10,6 +10,12 @@ definePageMeta({
 const route = useRoute()
 const uuid = route.params.uuid as string
 const role = computed(() => route.params.role as 'mommy' | 'daddy')
+
+const { setResumeGameAndRole } = useGameResume()
+
+onMounted(() => {
+  setResumeGameAndRole(uuid, role.value)
+})
 </script>
 
 <template>

@@ -16,7 +16,8 @@ const props = defineProps<{
 
 const toast = useToast()
 const { t } = useI18n()
-const loading = useSwipeDeckLoading()
+/** Local only — do not share with layout (avoids missing UI when route is entered via client redirect). */
+const loading = ref(true)
 
 type UndoState
   = | { kind: 'none' }

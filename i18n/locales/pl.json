@@ -97,7 +97,12 @@
     "imMommy": "Jestem mamą",
     "imDaddy": "Jestem tatą",
     "or": "lub",
-    "viewMatches": "Zobacz dopasowania"
+    "viewMatches": "Zobacz dopasowania",
+    "quitGame": "Opuść grę",
+    "quitModalTitle": "Opuścić tę grę?",
+    "quitModalDescription": "Aby ponownie dołączyć na tym urządzeniu, będziesz potrzebować kodu gry i PIN-u.",
+    "quitModalCancel": "Anuluj",
+    "quitModalConfirm": "Opuść grę"
   },
   "auth": {
     "pinLabel": "PIN",

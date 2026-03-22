@@ -97,7 +97,12 @@
     "imMommy": "I'm Mommy",
     "imDaddy": "I'm Daddy",
     "or": "or",
-    "viewMatches": "View Matches"
+    "viewMatches": "View Matches",
+    "quitGame": "Quit game",
+    "quitModalTitle": "Leave this game?",
+    "quitModalDescription": "You will need this game's ID and PIN to join again on this device.",
+    "quitModalCancel": "Cancel",
+    "quitModalConfirm": "Quit game"
   },
   "auth": {
     "pinLabel": "PIN",

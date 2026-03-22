@@ -5,7 +5,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="w-full flex justify-center pt-6">
+  <div class="w-full flex justify-center pt-2">
     <UButton
       :to="`/${gameId}`"
       :label="$t('game.backToGame')"

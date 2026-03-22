@@ -41,7 +41,7 @@ useSeoMeta({
 
       <!-- flex-1 fills space below header; flex-col + flex-1 container pushes footer down -->
       <UMain class="flex min-h-0 flex-1 flex-col">
-        <UContainer class="min-h-0 flex-1 py-8">
+        <UContainer class="min-h-0 flex-1 py-2">
           <NuxtLayout>
             <NuxtPage />
           </NuxtLayout>

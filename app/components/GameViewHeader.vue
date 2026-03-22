@@ -28,7 +28,7 @@ async function copyId() {
 </script>
 
 <template>
-  <div class="text-center space-y-3">
+  <div class="text-center space-y-2">
     <div
       class="inline-flex items-center justify-center gap-2 rounded-lg border border-default/40 bg-muted/50 px-3 py-2 mx-auto"
     >

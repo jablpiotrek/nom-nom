@@ -2,6 +2,53 @@
 @import "@nuxt/ui";
 
 /*
+ * iOS Safari: document-level elastic “rubber band” when the page is shorter than
+ * the viewport. Pin scroll to #__nuxt and disable overscroll chaining.
+ *
+ * Do NOT use `#__nuxt * { touch-action: manipulation }` — ID + universal beats
+ * vue3-flashcards’ `.flash-card { touch-action: none }` and breaks swipe drag.
+ *
+ * Double-tap zoom: `:where(...)` keeps specificity at 0 so libraries can override;
+ * target real controls (Nuxt UI uses native <button> / <a> for UButton).
+ */
+html {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  height: 100dvh;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#__nuxt {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+:where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    summary,
+    [role="button"],
+    [role="link"],
+    [role="tab"],
+    [role="menuitem"]
+  ) {
+  touch-action: manipulation;
+}
+
+/*
  * Slimmer top bar; footer uses the same height so chrome matches.
  * Nuxt UI reads --ui-header-height for UHeader + UMain min-height math.
  */

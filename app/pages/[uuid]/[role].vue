@@ -13,7 +13,7 @@ const role = computed(() => route.params.role as 'mommy' | 'daddy')
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div>
     <SwipeCard
       :game-id="uuid"
       :parent="role"

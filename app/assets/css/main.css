@@ -33,6 +33,11 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Nuxt UI UMain defaults to min-h-[calc(100vh-var(--ui-header-height))]; 100vh > 100dvh on iPhone → phantom scroll */
+#__nuxt main {
+  min-height: 0 !important;
+}
+
 :where(
     button,
     a,

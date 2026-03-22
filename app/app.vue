@@ -1,19 +1,19 @@
 <script setup>
-const { locale, t } = useI18n()
-const year = new Date().getFullYear()
+const { locale, t } = useI18n();
+const year = new Date().getFullYear();
 
 useHead(() => ({
-  meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
-  link: [{ rel: 'icon', href: '/favicon.ico' }],
+  meta: [{ name: "viewport", content: "width=device-width, initial-scale=1" }],
+  link: [{ rel: "icon", href: "/favicon.ico" }],
   htmlAttrs: {
-    lang: locale.value
-  }
-}))
+    lang: locale.value,
+  },
+}));
 
 useSeoMeta({
-  title: () => t('meta.title'),
-  description: () => t('meta.description')
-})
+  title: () => t("meta.title"),
+  description: () => t("meta.description"),
+});
 </script>
 
 <template>
@@ -22,14 +22,8 @@ useSeoMeta({
     <div class="flex min-h-dvh w-full flex-col">
       <UHeader :toggle="false">
         <template #left>
-          <NuxtLink
-            to="/"
-            class="flex items-center gap-2"
-          >
-            <UIcon
-              name="i-lucide-cookie"
-              class="w-6 h-6 text-primary"
-            />
+          <NuxtLink to="/" class="flex items-center gap-2">
+            <UIcon name="i-lucide-cookie" class="w-6 h-6 text-primary" />
             <span class="text-base font-bold sm:text-lg">nom-nom</span>
           </NuxtLink>
         </template>
@@ -40,7 +34,7 @@ useSeoMeta({
       </UHeader>
 
       <!-- flex-1 fills space below header; flex-col + flex-1 container pushes footer down -->
-      <UMain class="flex flex-1 flex-col">
+      <UMain class="flex min-h-0 flex-1 flex-col">
         <UContainer class="min-h-0 flex-1 py-8">
           <NuxtLayout>
             <NuxtPage />

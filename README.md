@@ -1,45 +1,32 @@
-# Nuxt Starter Template
+# nom-nom 🍼
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+A Tinder-style app for couples to pick a baby name together.
 
-Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
+One partner creates a game — choosing boy or girl and setting a shared PIN — and gets a game ID to share. Both partners join with the game ID + PIN, pick a role (mommy/daddy), and independently swipe right (like) or left (dislike) through a deck of names. Whenever both partners like the same name, it shows up as a match.
 
-- [Live demo](https://starter-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+Built with [Nuxt](https://nuxt.com) and [Nuxt UI](https://ui.nuxt.com), using Turso (SQLite) for storage via Drizzle ORM.
 
-<a href="https://starter-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png">
-    <img alt="Nuxt Starter Template" src="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png" width="830" height="466">
-  </picture>
-</a>
+## How it works
 
-> The starter template for Vue is on <https://github.com/nuxt-ui-templates/starter-vue>.
+- **Create a game**: pick a sex (boy/girl) and set a PIN. You get a game ID.
+- **Join a game**: enter the game ID and PIN from either partner's device.
+- **Pick a role**: mommy or daddy — swipes are tracked per role so each partner's choices are independent.
+- **Swipe**: like or dislike each name in the deck.
+- **Matches**: names both partners liked appear on the matches page.
 
-## Quick Start
+## Setup
 
-```bash [Terminal]
-npm create nuxt@latest -- -t ui
+Install dependencies:
+
+```bash
+npm install
 ```
-
-## Deploy your own
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=starter&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fstarter&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fstarter-dark.png&demo-url=https%3A%2F%2Fstarter-template.nuxt.dev%2F&demo-title=Nuxt%20Starter%20Template&demo-description=A%20minimal%20template%20to%20get%20started%20with%20Nuxt%20UI.)
 
 ## Database (Turso)
 
 See **[docs/TURSO.md](./docs/TURSO.md)** — connect `.env`, run `db:migrate`, then `db:seed`.
 
 **Vercel:** set `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_SECRET`, and use build command `npm run vercel-build`.
-
-## Setup
-
-Make sure to install the dependencies:
-
-```bash
-npm install
-```
 
 ## Development Server
 
